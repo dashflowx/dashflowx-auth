@@ -6,3 +6,6 @@ export { DfxForgetPassword } from './components/DfxForgetPassword';
 export { DfxResetPassword } from './components/DfxResetPassword';
 export { DfxAuthEmail } from './components/DfxAuthEmail';
 export { DfxChangePassword } from './components/DfxChangePassword';
+export { DfxRecoverEmail } from './components/DfxRecoverEmail';
+export { DfxVerifyEmail } from './components/DfxVerifyEmail';
+export type { AuthVariant, AuthEmailMode, AuthLibrary } from './components/shared/types';

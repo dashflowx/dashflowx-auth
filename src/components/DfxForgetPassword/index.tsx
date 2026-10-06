@@ -1,86 +1,114 @@
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import BasicForgetPassword from './Varients/Basic';
 import { useAuth } from '@/Providers/AuthProvider';
-import { ErrorPopUp, InfoPopUp } from '@/lib';
+import { emailSchema, type EmailFormValues } from '../shared/schemas';
+import {
+  resolveAuthVariant,
+  type AuthChromeProps,
+  type AuthLibrary,
+  type AuthLinkType,
+  type AuthVariant,
+} from '../shared/types';
+import BasicForgetPassword from './Varients/Basic';
 
-const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, { message: 'Please enter a valid email' })
-    .email({ message: 'Not a valid email' }),
-});
-
-interface iDfxForgetPassword {
-  library: 'react' | 'next';
-  type: any;
-  redirectSignInUrl: string;
-  previewImg: string;
-  previewTitle: string;
-  PreviewDescription: string;
-  isLoading?: boolean;
-  varient: 'basic';
+export type DfxForgetPasswordProps = AuthChromeProps & {
+  library?: AuthLibrary;
+  type?: AuthLinkType;
+  redirectSignInUrl?: string;
   showSignIn?: boolean;
-  continueUrl: string; // This is the url to redirect the user to after signing in.
+  /** URL the user lands on after opening the reset email. */
+  continueUrl?: string;
   handleForgetPassword?: () => void;
-}
+  handleForgetPasswordError?: (error: unknown) => void;
+  title?: string;
+  description?: string;
+  submitLabel?: string;
+};
+
+const VARIANTS: Record<AuthVariant, typeof BasicForgetPassword> = {
+  basic: BasicForgetPassword,
+  split: BasicForgetPassword,
+  card: BasicForgetPassword,
+  minimal: BasicForgetPassword,
+};
 
 const DfxForgetPassword = ({
-  library,
-  type,
-  redirectSignInUrl,
-  previewImg,
-  previewTitle,
-  PreviewDescription,
-  isLoading,
-  varient = 'basic',
+  library = 'react',
+  type = 'a',
+  redirectSignInUrl = '/sign-in',
+  previewImg = '',
+  previewTitle = '',
+  PreviewDescription = '',
+  isLoading: isLoadingProp,
+  variant,
+  varient,
   showSignIn = true,
-  continueUrl,
-  handleForgetPassword
-}: iDfxForgetPassword) => {
+  continueUrl = '',
+  handleForgetPassword,
+  handleForgetPasswordError,
+  title,
+  description,
+  submitLabel,
+  className,
+}: DfxForgetPasswordProps) => {
+  const resolved = resolveAuthVariant(variant, varient);
+  const View = VARIANTS[resolved] ?? VARIANTS.basic;
   const { forgotPassword } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm({
-    defaultValues: {
-      email: '',
-    },
-    resolver: zodResolver(loginSchema),
+  } = useForm<EmailFormValues>({
+    defaultValues: { email: '' },
+    resolver: zodResolver(emailSchema),
   });
-  const handleSubmitForm = (data: any) => {
-    forgotPassword(data.email, continueUrl)
-      .then(() => {
-        console.log('Email sent successfully');
-        InfoPopUp('Email sent successfully')
-        handleForgetPassword && handleForgetPassword();
-      })
-      .catch((err: any) => {
-        console.log(err, 'Error sending email');
-        ErrorPopUp(err.message)
-      });
+
+  const handleSubmitForm = async (data: EmailFormValues) => {
+    setBusy(true);
+    setErrorMessage(null);
+    setStatusMessage(null);
+    try {
+      const result = await forgotPassword(data.email, continueUrl);
+      if (result == null) throw new Error('Auth is not ready');
+      setStatusMessage('Email sent successfully');
+      handleForgetPassword?.();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setErrorMessage(message);
+      handleForgetPasswordError?.(err);
+    } finally {
+      setBusy(false);
+    }
   };
 
-  if (varient === 'basic') {
-    return (
-      <BasicForgetPassword
-        handleSubmit={handleSubmit}
-        handleSubmitForm={handleSubmitForm}
-        register={register}
-        errors={errors}
-        isLoading={isLoading}
-        library={library}
-        type={type}
-        redirectSignInUrl={redirectSignInUrl}
-        PreviewDescription={PreviewDescription}
-        previewTitle={previewTitle}
-        previewImg={previewImg}
-        showSignIn={showSignIn}
-      />
-    );
-  }
+  return (
+    <View
+      handleSubmit={handleSubmit}
+      handleSubmitForm={handleSubmitForm}
+      register={register}
+      errors={errors}
+      isLoading={isLoadingProp ?? busy}
+      library={library}
+      type={type}
+      redirectSignInUrl={redirectSignInUrl}
+      PreviewDescription={PreviewDescription}
+      previewTitle={previewTitle}
+      previewImg={previewImg}
+      showSignIn={showSignIn}
+      title={title}
+      description={description}
+      submitLabel={submitLabel}
+      statusMessage={statusMessage}
+      errorMessage={errorMessage}
+      variant={resolved}
+      className={className}
+    />
+  );
 };
 
 export { DfxForgetPassword };

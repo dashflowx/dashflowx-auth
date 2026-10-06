@@ -6,7 +6,11 @@ const meta: Meta<typeof DfxResetPassword> = {
   component: DfxResetPassword,
   tags: ['autodocs'],
   parameters: {
-    layout: 'centered',
+    layout: 'fullscreen',
+  },
+  argTypes: {
+    variant: { control: 'select', options: ['basic', 'split', 'card', 'minimal'] },
+    library: { control: 'select', options: ['react', 'next'] },
   },
 };
 

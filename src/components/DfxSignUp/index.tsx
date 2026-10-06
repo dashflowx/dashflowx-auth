@@ -1,120 +1,138 @@
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import BasicSignup from './Varients/Basic';
 import { useAuth } from '@/Providers/AuthProvider';
+import { signUpSchema, type SignUpFormValues } from '../shared/schemas';
+import {
+  resolveAuthVariant,
+  type AuthChromeProps,
+  type AuthLibrary,
+  type AuthLinkType,
+  type AuthVariant,
+} from '../shared/types';
+import BasicSignUp from './Varients/Basic';
 
-const loginSchema = z.object({
-  username: z
-    .string()
-    .min(1, { message: 'Please enter a valid Username' })
-    .max(20, { message: 'Username must be less than 20 characters' }),
-  email: z
-    .string()
-    .min(1, { message: 'Please enter a valid email' })
-    .email({ message: 'Not a valid email' }),
-  password: z
-    .string()
-    .min(1, { message: 'Please enter a valid password' })
-    .max(20, { message: 'Password must be less than 20 characters' }),
-});
-
-interface iDfxSignUp {
-  library: 'react' | 'next';
-  type: any;
-  redirectSignInUrl: string;
-  previewImg: string;
-  previewTitle: string;
-  PreviewDescription: string;
-  handleSignUp: (data: {
-    username: string;
-    email: string;
-    password: string;
-  }) => void;
-  isLoading?: boolean;
-  handleSignOn?: (data: any) => void;
-  handleSignOnError?: (error: any) => void;
-  logoUrl: string;
-  varient: 'basic';
+export type DfxSignUpProps = AuthChromeProps & {
+  library?: AuthLibrary;
+  type?: AuthLinkType;
+  redirectSignInUrl?: string;
+  handleSignUp?: (data: { username: string; email: string; password: string }) => void;
+  handleSignUpError?: (error: unknown) => void;
+  handleSignOn?: (data: unknown) => void;
+  handleSignOnError?: (error: unknown) => void;
+  logoUrl?: string;
   showSignIn?: boolean;
-  continueUrl: string;
   showSignOn?: boolean;
-}
+  continueUrl?: string;
+  title?: string;
+  submitLabel?: string;
+  googleLabel?: string;
+};
+
+const VARIANTS: Record<AuthVariant, typeof BasicSignUp> = {
+  basic: BasicSignUp,
+  split: BasicSignUp,
+  card: BasicSignUp,
+  minimal: BasicSignUp,
+};
 
 const DfxSignUp = ({
-  library,
-  type,
-  redirectSignInUrl,
-  previewImg,
-  previewTitle,
-  PreviewDescription,
+  library = 'react',
+  type = 'a',
+  redirectSignInUrl = '/sign-in',
+  previewImg = '',
+  previewTitle = '',
+  PreviewDescription = '',
   handleSignUp,
-  isLoading,
+  handleSignUpError,
+  isLoading: isLoadingProp,
   handleSignOn,
   handleSignOnError,
-  logoUrl,
-  varient = 'basic',
+  logoUrl = '',
+  variant,
+  varient,
   showSignIn = true,
-  continueUrl,
-  showSignOn,
-}: iDfxSignUp) => {
+  showSignOn = true,
+  continueUrl = '',
+  title,
+  submitLabel,
+  googleLabel,
+  className,
+}: DfxSignUpProps) => {
+  const resolved = resolveAuthVariant(variant, varient);
+  const View = VARIANTS[resolved] ?? VARIANTS.basic;
   const { signUp, signInWithGoogle } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm({
-    defaultValues: {
-      username: '',
-      email: '',
-      password: '',
-    },
-    resolver: zodResolver(loginSchema),
+  } = useForm<SignUpFormValues>({
+    defaultValues: { username: '', email: '', password: '' },
+    resolver: zodResolver(signUpSchema),
   });
-  const handleSubmitForm = (data: any) => {
-    signUp(data.email, data.password, continueUrl)
-      .then(() => {
-        handleSignUp({
-          username: data.username,
-          email: data.email,
-          password: data.password,
-        });
-        console.log('Signup successfully');
-      })
-      .catch((err: any) => {
-        console.log(err, 'Error signing up');
-      });
-  };
 
-  const handleSubmitOn = (type: string) => {
-    if (type === 'google') {
-      signInWithGoogle()
-        .then((user: any) => handleSignOn && handleSignOn(user))
-        .catch((error: any) => handleSignOnError && handleSignOnError(error));
+  const handleSubmitForm = async (data: SignUpFormValues) => {
+    setBusy(true);
+    setErrorMessage(null);
+    try {
+      const result = await signUp(data.email, data.password, continueUrl);
+      if (result == null) throw new Error('Auth is not ready');
+      handleSignUp?.({
+        username: data.username,
+        email: data.email,
+        password: data.password,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setErrorMessage(message);
+      handleSignUpError?.(err);
+    } finally {
+      setBusy(false);
     }
   };
 
-  if (varient === 'basic') {
-    return (
-      <BasicSignup
-        logoUrl={logoUrl}
-        handleSubmitOn={handleSubmitOn}
-        handleSubmit={handleSubmit}
-        handleSubmitForm={handleSubmitForm}
-        register={register}
-        errors={errors}
-        isLoading={isLoading}
-        library={library}
-        type={type}
-        redirectSignInUrl={redirectSignInUrl}
-        PreviewDescription={PreviewDescription}
-        previewTitle={previewTitle}
-        previewImg={previewImg}
-        showSignIn={showSignIn}
-        showSignOn={showSignOn}
-      />
-    );
-  }
+  const handleSubmitOn = async (provider: string) => {
+    if (provider !== 'google') return;
+    setBusy(true);
+    try {
+      const user = await signInWithGoogle();
+      handleSignOn?.(user);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : String(error));
+      handleSignOnError?.(error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <View
+      logoUrl={logoUrl}
+      handleSubmitOn={handleSubmitOn}
+      handleSubmit={handleSubmit}
+      handleSubmitForm={handleSubmitForm}
+      register={register}
+      errors={errors}
+      isLoading={isLoadingProp ?? busy}
+      library={library}
+      type={type}
+      redirectSignInUrl={redirectSignInUrl}
+      PreviewDescription={PreviewDescription}
+      previewTitle={previewTitle}
+      previewImg={previewImg}
+      showSignIn={showSignIn}
+      showSignOn={showSignOn}
+      title={title}
+      submitLabel={submitLabel}
+      googleLabel={googleLabel}
+      errorMessage={errorMessage}
+      variant={resolved}
+      className={className}
+    />
+  );
 };
 
 export { DfxSignUp };

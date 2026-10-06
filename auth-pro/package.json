@@ -1,20 +1,22 @@
 {
   "name": "@dashflowx/auth-pro",
-  "version": "0.0.27",
+  "version": "0.0.28",
   "description": "Pro auth screens (SSO/SAML, magic link, org invites). Publish only to GitHub Packages.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dashflowx/dashflowx-auth.git"
   },
   "type": "module",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "main": "dist/index.umd.js",
   "module": "dist/index.es.js",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
   "peerDependencies": {
-    "@dashflowx/auth": ">=0.0.27",
+    "@dashflowx/auth": ">=0.0.28",
     "@dashflowx/core": ">=3.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

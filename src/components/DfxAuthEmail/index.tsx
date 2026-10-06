@@ -1,69 +1,55 @@
-import DfxRecoverEmail from '../DfxRecoverEmail';
-import { DfxResetPassword } from '../DfxResetPassword';
-import DfxVerifyEmail from '../DfxVerifyEmail';
+import { DfxRecoverEmail } from '../DfxRecoverEmail';
+import { DfxResetPassword, type DfxResetPasswordProps } from '../DfxResetPassword';
+import { DfxVerifyEmail, type DfxVerifyEmailProps } from '../DfxVerifyEmail';
+import type { AuthEmailMode } from '../shared/types';
 
-interface iDfxAuthEmail {
-  mode: string;
-  library: 'react' | 'next';
-  type: any;
-  redirectSignInUrl: string;
-  previewImg: string;
-  previewTitle: string;
-  PreviewDescription: string;
-  handleResetPassword: (data: any) => void;
-  isLoading?: boolean;
-  varient: 'basic';
-  showSignIn?: boolean;
-  oobCode: string;
-  email?: string;
-  handleEmailVerified?: () => void;
-  handleEmailVerificationError?: (err: any) => void;
-}
+export type DfxAuthEmailProps = DfxResetPasswordProps &
+  Pick<
+    DfxVerifyEmailProps,
+    'handleEmailVerified' | 'handleEmailVerificationError' | 'title' | 'pendingLabel' | 'successLabel'
+  > & {
+    mode?: AuthEmailMode | string;
+    email?: string;
+    recoverTitle?: string;
+    recoverDescription?: string;
+  };
+
 const DfxAuthEmail = ({
-  mode,
-  library,
-  type,
-  redirectSignInUrl,
-  previewImg,
-  previewTitle,
-  PreviewDescription,
-  handleResetPassword,
-  isLoading,
-  varient = 'basic',
-  showSignIn = true,
-  oobCode,
+  mode = 'resetPassword',
+  email,
+  recoverTitle,
+  recoverDescription,
   handleEmailVerified,
   handleEmailVerificationError,
-}: iDfxAuthEmail) => {
-  if (mode === 'resetPassword') {
+  title,
+  pendingLabel,
+  successLabel,
+  ...rest
+}: DfxAuthEmailProps) => {
+  if (mode === 'recoverEmail') {
     return (
-      <DfxResetPassword
-        library={library}
-        type={type}
-        redirectSignInUrl={redirectSignInUrl}
-        previewImg={previewImg}
-        previewTitle={previewTitle}
-        PreviewDescription={PreviewDescription}
-        handleResetPassword={handleResetPassword}
-        oobCode={oobCode}
-        isLoading={isLoading}
-        varient={varient}
-        showSignIn={showSignIn}
+      <DfxRecoverEmail
+        {...rest}
+        email={email}
+        title={recoverTitle}
+        description={recoverDescription}
       />
     );
-  }
-  if (mode === 'recoverEmail') {
-    return <DfxRecoverEmail />;
   }
   if (mode === 'verifyEmail') {
     return (
       <DfxVerifyEmail
-        oobCode={oobCode}
+        {...rest}
         handleEmailVerified={handleEmailVerified}
         handleEmailVerificationError={handleEmailVerificationError}
+        title={title}
+        pendingLabel={pendingLabel}
+        successLabel={successLabel}
       />
     );
   }
+  return <DfxResetPassword {...rest} title={title} />;
 };
 
 export { DfxAuthEmail };
+export type { AuthEmailMode };

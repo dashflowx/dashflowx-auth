@@ -1,79 +1,97 @@
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useAuth } from '../../Providers/AuthProvider.tsx';
-import BasicChangePassword from './Varients/Basic.tsx';
+import { useAuth } from '@/Providers/AuthProvider';
+import { passwordPairSchema, type PasswordPairValues } from '../shared/schemas';
+import {
+  resolveAuthVariant,
+  type AuthChromeProps,
+  type AuthLibrary,
+  type AuthLinkType,
+  type AuthVariant,
+} from '../shared/types';
+import BasicPassword from '../DfxResetPassword/Varients/Basic';
 
-const loginSchema = z.object({
-  newpassword: z
-    .string()
-    .min(1, { message: 'Please enter a valid password' })
-    .max(20, { message: 'Password must be less than 20 characters' }),
-  confirmpassword: z
-    .string()
-    .min(1, { message: 'Please enter a valid password' })
-    .max(20, { message: 'Password must be less than 20 characters' }),
-});
-
-interface iDfxChangePassword {
-  library: 'react' | 'next';
-  type: any;
-  redirectSignInUrl: string;
-  handleChangePassword: (data: { password: string }) => void;
-  isLoading?: boolean;
-  varient: 'basic';
+export type DfxChangePasswordProps = AuthChromeProps & {
+  library?: AuthLibrary;
+  type?: AuthLinkType;
+  redirectSignInUrl?: string;
+  handleChangePassword?: (data: { password: string }) => void;
+  handleChangePasswordError?: (error: unknown) => void;
   showSignIn?: boolean;
-}
+  title?: string;
+  submitLabel?: string;
+};
+
+const VARIANTS: Record<AuthVariant, typeof BasicPassword> = {
+  basic: BasicPassword,
+  split: BasicPassword,
+  card: BasicPassword,
+  minimal: BasicPassword,
+};
 
 const DfxChangePassword = ({
-  library,
-  type,
-  redirectSignInUrl,
+  library = 'react',
+  type = 'a',
+  redirectSignInUrl = '/sign-in',
   handleChangePassword,
-  isLoading,
-  varient = 'basic',
+  handleChangePasswordError,
+  isLoading: isLoadingProp,
+  variant,
+  varient,
   showSignIn = true,
-}: iDfxChangePassword) => {
+  title = 'Change password',
+  submitLabel = 'Change password',
+  className,
+}: DfxChangePasswordProps) => {
+  const resolved = resolveAuthVariant(variant, varient);
+  const View = VARIANTS[resolved] ?? VARIANTS.basic;
   const { changePassword } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm({
-    defaultValues: {
-      newpassword: '',
-      confirmpassword: '',
-    },
-    resolver: zodResolver(loginSchema),
+  } = useForm<PasswordPairValues>({
+    defaultValues: { newpassword: '', confirmpassword: '' },
+    resolver: zodResolver(passwordPairSchema),
   });
-  const handleSubmitForm = (data: any) => {
-    changePassword(data.confirmpassword)
-      .then(() => {
-        handleChangePassword({
-          password: data.confirmpassword,
-        });
-        console.log('Password reset successfully');
-      })
-      .catch((err: any) => {
-        console.log(err, 'Error resetting password');
-      });
+
+  const handleSubmitForm = async (data: PasswordPairValues) => {
+    setBusy(true);
+    setErrorMessage(null);
+    try {
+      const result = await changePassword(data.confirmpassword);
+      if (result == null) throw new Error('Auth is not ready');
+      handleChangePassword?.({ password: data.confirmpassword });
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : String(err));
+      handleChangePasswordError?.(err);
+    } finally {
+      setBusy(false);
+    }
   };
 
-  if (varient === 'basic') {
-    return (
-      <BasicChangePassword
-        handleSubmit={handleSubmit}
-        handleSubmitForm={handleSubmitForm}
-        register={register}
-        errors={errors}
-        isLoading={isLoading}
-        library={library}
-        type={type}
-        redirectSignInUrl={redirectSignInUrl}
-        showSignIn={showSignIn}
-      />
-    );
-  }
+  return (
+    <View
+      handleSubmit={handleSubmit}
+      handleSubmitForm={handleSubmitForm}
+      register={register}
+      errors={errors}
+      isLoading={isLoadingProp ?? busy}
+      library={library}
+      type={type}
+      redirectSignInUrl={redirectSignInUrl}
+      showSignIn={showSignIn}
+      title={title}
+      submitLabel={submitLabel}
+      errorMessage={errorMessage}
+      variant={resolved}
+      className={className}
+    />
+  );
 };
 
 export { DfxChangePassword };
