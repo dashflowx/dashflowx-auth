@@ -71,7 +71,7 @@ const BasicForgetPassword = ({
                           id="login-newpassword"
                           className="w-full flex-1 appearance-none border-gray-300 bg-white px-4 py-2 text-base text-gray-700 placeholder-gray-400 focus:outline-none"
                           placeholder="New Password"
-                          fullwidth={true}
+                          fullWidth={true}
                           {...register('newpassword', { required: true })}
                           errorMsg={errors.newpassword?.message}
                         />
@@ -80,16 +80,16 @@ const BasicForgetPassword = ({
                           id="login-confirmpassword"
                           className="w-full flex-1 appearance-none border-gray-300 bg-white px-4 py-2 text-base text-gray-700 placeholder-gray-400 focus:outline-none"
                           placeholder="Confirm Password"
-                          fullwidth={true}
+                          fullWidth={true}
                           {...register('confirmpassword', { required: true })}
                           errorMsg={errors.confirmpassword?.message}
                         />
                       </div>
                       <Button
-                        variant="solid"
+                        variant="primary"
                         color="primary"
                         type="submit"
-                        fullwidth={true}
+                        fullWidth={true}
                         className="inline-flex items-center justify-center gap-2 rounded-md border border-transparent py-3 px-4 text-sm font-semibold text-white transition-all focus:outline-none focus:ring-2"
                         disabled={isLoading}
                       >

@@ -1,0 +1,23 @@
+# Dependencies / build
+node_modules
+dist
+auth-pro/dist
+*.local
+.DS_Store
+
+# Logs / coverage
+*.log
+coverage
+storybook-static
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Editors / tooling
+.idea
+.vscode
+*.tsbuildinfo
+.vite
+.cache

@@ -76,7 +76,7 @@ const BasicSignIn = ({
                 id="login-email"
                 className="w-full flex-1 appearance-none border-gray-300 bg-white px-4 py-2 text-base text-gray-700 placeholder-gray-400 focus:outline-none"
                 placeholder="Email"
-                fullwidth={true}
+                fullWidth={true}
                 {...register('email', { required: true })}
                 errorMsg={errors.email?.message}
               />
@@ -87,17 +87,17 @@ const BasicSignIn = ({
                 id="login-password"
                 className="w-full flex-1 appearance-none border-gray-300 bg-white px-4 py-2 text-base text-gray-700 placeholder-gray-400 focus:outline-none"
                 placeholder="Password"
-                fullwidth={true}
+                fullWidth={true}
                 {...register('password', { required: true })}
                 errorMsg={errors.password?.message}
               />
             </div>
             <Button
-              variant="solid"
+              variant="primary"
               color="primary"
               type="submit"
               className="w-full rounded-lg px-4 py-2 text-center text-base font-semibold shadow-md ring-gray-500 ring-offset-2 transition focus:ring-2"
-              fullwidth={true}
+              fullWidth={true}
               disabled={isLoading}
             >
               Sign in
